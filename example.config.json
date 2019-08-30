@@ -1,0 +1,28 @@
+{
+  "urlbase": "hunter.fm",
+  "sleepTime": "60000",
+  "icecast": [
+    {
+      "ssl": false,
+      "hostname": "127.0.0.1",
+      "port": "80",
+      "username": "",
+      "password": "",
+      "xml": {
+        "status": "/admin/stats",
+        "listclients": "/admin/listclient"
+      },
+      "notlist": []
+    }
+  ],
+  "analytics": [
+    {
+      "TID": "UA-XXXXXXXX-Y",
+      "mounts": ["*"]
+    },
+    {
+      "TID": "UA-XXXXXXXX-Y",
+      "mounts": ["/rock", "/classic"]
+    }
+  ]
+}
