@@ -3,7 +3,7 @@ import Analytics from './lib/analytics';
 import config from '../config.json';
 
 const allAnalytics = config.analytics.map(
-  analytics => new Analytics(analytics, config.urlbase)
+  analytics => new Analytics(analytics, config.urlbase, config.minConnect)
 );
 
 config.icecast.forEach(icecast => {

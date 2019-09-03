@@ -1,11 +1,12 @@
 import axios from 'axios';
 
 export default class Analytics {
-  constructor(config, urlbase) {
+  constructor(config, urlbase, minConnect) {
     this.createUserData = this.createUserData.bind(this);
     this.updateMounts = this.updateMounts.bind(this);
 
     this.config = config;
+    this.minConnect = minConnect;
     this.urlbase = urlbase;
     this.urlgoogle = 'https://www.google-analytics.com/batch';
   }
@@ -49,7 +50,9 @@ export default class Analytics {
     // Gerar os id's e envia para o Google Analytics
     let datas = [];
     myMounts.forEach(m => {
-      const valores = m.listeners.map(l => this.createUserData(m, l));
+      const valores = m.listeners
+        .filter(l => l.connect >= this.minConnect)
+        .map(l => this.createUserData(m, l));
       datas = [...datas, ...valores];
     });
 

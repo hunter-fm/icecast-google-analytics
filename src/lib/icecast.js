@@ -51,12 +51,12 @@ export default class IceCast extends EventEmitter {
     const { icestats } = xml2js.xml2js(xml, { compact: true });
     const { source } = icestats;
 
-    if (parseInt(String, source.listeners._text) <= 0) return [];
+    if (parseInt(source.listeners._text, 10) <= 0) return [];
     return Array.from(
       Array.isArray(source.listener) ? source.listener : [source.listener]
     ).map(client => {
       return {
-        id: client.ID._text,
+        id: client._attributes.id,
         ip: client.IP._text,
         connect: client.Connected._text,
         useragent: client.UserAgent._text,
@@ -69,7 +69,7 @@ export default class IceCast extends EventEmitter {
     const { icestats } = xml2js.xml2js(xml, { compact: true });
     const { sources, source } = icestats;
 
-    if (parseInt(String, sources._text) <= 0) return [];
+    if (parseInt(sources._text, 10) <= 0) return [];
     const filterSource = Array.from(
       Array.isArray(source) ? source : [source]
     ).filter(
