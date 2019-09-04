@@ -2,7 +2,8 @@ import axios from 'axios';
 
 export default class Analytics {
   constructor(config, urlbase, minConnect) {
-    this.createUserData = this.createUserData.bind(this);
+    this.createUserEvent = this.createUserEvent.bind(this);
+    this.createUserPageview = this.createUserPageview.bind(this);
     this.updateMounts = this.updateMounts.bind(this);
 
     this.config = config;
@@ -11,7 +12,40 @@ export default class Analytics {
     this.urlgoogle = 'https://www.google-analytics.com/batch';
   }
 
-  createUserData(mount, listener) {
+  createUserEvent(mount, listener) {
+    let title = mount.metadata.title || '';
+    if ('artist' in mount.metadata) {
+      title = `${mount.metadata.artist || ''} - ${title}`;
+    }
+
+    const isAds = title.toLowerCase().indexOf('advert:') === 0;
+    const data = {
+      v: 1,
+      t: 'event',
+      tid: this.config.TID,
+
+      ec: this.config.category,
+      ea: isAds ? 'advert' : 'music',
+      el: title,
+
+      cid: listener.ip,
+      uip: listener.ip,
+      ua: listener.useragent,
+      dh: this.urlbase,
+      dp: `${mount.name}/${title}`,
+      dt: mount.title,
+      dr: listener.referer,
+    };
+
+    let textData = '';
+    Object.keys(data).forEach(key => {
+      if (textData.length > 0) textData += '&';
+      textData += `${key}=${encodeURIComponent(data[key])}`;
+    });
+    return textData;
+  }
+
+  createUserPageview(mount, listener) {
     let title = mount.metadata.title || '';
     if ('artist' in mount.metadata) {
       title = `${mount.metadata.artist || ''} - ${title}`;
@@ -39,7 +73,7 @@ export default class Analytics {
   }
 
   updateMounts(mounts) {
-    console.log('Updated Mount!', this.config.TID);
+    console.log('Updated Mount! ', this.config.category);
 
     // Filtrar mounts só do TID
     const myMounts =
@@ -52,7 +86,13 @@ export default class Analytics {
     myMounts.forEach(m => {
       const valores = m.listeners
         .filter(l => l.connect >= this.minConnect)
-        .map(l => this.createUserData(m, l));
+        .map(l =>
+          this.config.type.map(type => {
+            return type === 'pageview'
+              ? this.createUserPageview(m, l)
+              : this.createUserEvent(m, l);
+          })
+        );
       datas = [...datas, ...valores];
     });
 
