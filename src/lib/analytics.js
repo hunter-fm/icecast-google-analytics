@@ -21,7 +21,7 @@ export default class Analytics {
       v: 1,
       t: 'pageview',
       tid: this.config.TID,
-      cid: listener.ip,
+      cid: listener.uuid,
       uip: listener.ip,
       ua: listener.useragent,
       dh: this.urlbase,
