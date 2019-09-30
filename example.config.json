@@ -18,13 +18,12 @@
   ],
   "analytics": [
     {
-      "type": ["event", "pageview"],
       "category": "all",
       "TID": "UA-XXXXXXXX-Y",
       "mounts": ["*"]
     },
     {
-      "type": ["event", "pageview"],
+      "url": "/sertanejo",
       "category": "country",
       "TID": "UA-XXXXXXXX-Y",
       "mounts": ["/country320", "/country", "/mcountry", "/country32"]
