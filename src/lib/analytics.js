@@ -1,10 +1,14 @@
 import axios from 'axios';
 
 export default class Analytics {
-  constructor(config, urlbase, minConnect) {
+  constructor(config, urlbase, minConnect) {    
+    this.sessionType = this.sessionType.bind(this);
     this.createUserEvent = this.createUserEvent.bind(this);
     this.createUserPageview = this.createUserPageview.bind(this);
     this.updateMounts = this.updateMounts.bind(this);
+
+    this.update = 1;
+    this.sessions = [];
 
     this.config = config;
     this.minConnect = minConnect;
@@ -12,6 +16,18 @@ export default class Analytics {
     this.urlgoogle = 'https://www.google-analytics.com/batch';
   }
 
+  sessionType(uuid, info) {
+    const session = this.sessions.find(c => c.uuid === uuid);
+    if (session === undefined || session === null) {
+      this.sessions.push({ info, uuid, update: this.update });
+      return 'start';
+    }
+
+    session.update = this.update;
+    session.info = Object.assign({}, info);
+    return 'update';
+  }
+  
   createUserEvent(mount, listener) {
     let title = mount.metadata.title || '';
     if ('artist' in mount.metadata) {
@@ -54,15 +70,18 @@ export default class Analytics {
     const data = {
       v: 1,
       t: 'pageview',
+      sc: 'update',
       tid: this.config.TID,
-      cid: listener.ip,
+      cid: listener.uuid,
       uip: listener.ip,
       ua: listener.useragent,
       dh: this.urlbase,
-      dp: `${mount.name}/${title}`,
+      dp: mount.name,
       dt: mount.title,
       dr: listener.referer,
     };
+
+    data.sc = this.sessionType(listener.uuid, data);
 
     let textData = '';
     Object.keys(data).forEach(key => {
@@ -70,6 +89,22 @@ export default class Analytics {
       textData += `${key}=${encodeURIComponent(data[key])}`;
     });
     return textData;
+  }
+
+  createUserSessionEnd() {
+    const ends = this.sessions.filter(s => s.update !== this.update);
+    this.sessions = this.sessions.filter(s => s.update === this.update);
+    return ends.length > 0
+      ? ends.map(s => {
+          const data = { ...s.info, sc: 'end' };
+          let textData = '';
+          Object.keys(data).forEach(key => {
+            if (textData.length > 0) textData += '&';
+            textData += `${key}=${encodeURIComponent(data[key])}`;
+          });
+          return textData;
+        })
+      : [];
   }
 
   updateMounts(mounts) {
@@ -82,6 +117,7 @@ export default class Analytics {
         : mounts.filter(m => this.config.mounts.indexOf(m.name) >= 0);
 
     // Gerar os id's e envia para o Google Analytics
+    this.update++;
     let datas = [];
     myMounts.forEach(m => {
       const valores = m.listeners
@@ -95,9 +131,9 @@ export default class Analytics {
         );
       datas = [...datas, ...valores];
     });
+    datas = [...datas, ...this.createUserSessionEnd()];
 
     const sendsDatas = [];
-
     let tempDatas = '';
     let countData = 0;
     datas.forEach(dt => {

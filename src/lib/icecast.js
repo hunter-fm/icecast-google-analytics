@@ -3,7 +3,7 @@ import EventEmitter from 'events';
 import xml2js from 'xml-js';
 
 export default class IceCast extends EventEmitter {
-  constructor(sleepTime, config) {
+  constructor(sleepTime, config, uuid) {
     super();
     this.getUrl = this.getUrl.bind(this);
     this.getServerInfo = this.getServerInfo.bind(this);
@@ -11,9 +11,9 @@ export default class IceCast extends EventEmitter {
     this.getXMLClient = this.getXMLClient.bind(this);
     this.findGetParameter = this.findGetParameter.bind(this);
 
+    this.uuid = uuid;
     this.config = config;
     this.sleepTime = sleepTime;
-
     this.getServerInfo();
   }
 
@@ -58,8 +58,9 @@ export default class IceCast extends EventEmitter {
       return {
         id: client._attributes.id,
         ip: client.IP._text,
-        connect: client.Connected._text,
-        useragent: client.UserAgent._text,
+        uuid: this.uuid.create(client._attributes.id, client.IP._text),
+        connect: 'Connected' in client ? client.Connected._text : '',
+        useragent: 'UserAgent' in client ? client.UserAgent._text : '',
         referer: 'Referer' in client ? client.Referer._text : 'no-referer',
       };
     });
