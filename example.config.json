@@ -1,6 +1,7 @@
 {
   "urlbase": "hunter.fm",
-  "sleepTime": "60000",
+  "sleepTime": 30000,
+  "minConnect": 5,
   "icecast": [
     {
       "ssl": false,
@@ -17,12 +18,16 @@
   ],
   "analytics": [
     {
+      "type": ["event", "pageview"],
+      "category": "all",
       "TID": "UA-XXXXXXXX-Y",
       "mounts": ["*"]
     },
     {
+      "type": ["event", "pageview"],
+      "category": "country",
       "TID": "UA-XXXXXXXX-Y",
-      "mounts": ["/rock", "/classic"]
+      "mounts": ["/country320", "/country", "/mcountry", "/country32"]
     }
   ]
 }
