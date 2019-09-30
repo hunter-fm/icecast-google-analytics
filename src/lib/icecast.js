@@ -14,7 +14,6 @@ export default class IceCast extends EventEmitter {
     this.uuid = uuid;
     this.config = config;
     this.sleepTime = sleepTime;
-
     this.getServerInfo();
   }
 
