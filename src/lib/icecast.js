@@ -6,6 +6,7 @@ export default class IceCast extends EventEmitter {
   constructor(sleepTime, config, uuid) {
     super();
     this.getUrl = this.getUrl.bind(this);
+    this.getUrlClients = this.getUrlClients.bind(this);
     this.getServerInfo = this.getServerInfo.bind(this);
     this.getXMLInfo = this.getXMLInfo.bind(this);
     this.getXMLClient = this.getXMLClient.bind(this);
@@ -33,6 +34,16 @@ export default class IceCast extends EventEmitter {
       url += `:${this.config.port}`;
     }
     return url;
+  }
+
+  getUrlClients(mount) {
+    if (
+      this.getUrl().indexOf('?') >= 0 ||
+      this.config.xml.listclients.indexOf('?') >= 0
+    ) {
+      return `${this.getUrl()}${this.config.xml.listclients}&mount=${mount}`;
+    }
+    return `${this.getUrl()}${this.config.xml.listclients}?mount=${mount}`;
   }
 
   getServerInfo() {
@@ -70,7 +81,8 @@ export default class IceCast extends EventEmitter {
     const { icestats } = xml2js.xml2js(xml, { compact: true });
     const { sources, source } = icestats;
 
-    if (parseInt(sources._text, 10) <= 0) return [];
+    // if (parseInt(sources._text, 10) <= 0) return [];
+    if (source === undefined || source === null) return [];
     const filterSource = Array.from(
       Array.isArray(source) ? source : [source]
     ).filter(
@@ -80,18 +92,17 @@ export default class IceCast extends EventEmitter {
     const mounts = filterSource.map(mount => ({
       name: mount._attributes.mount,
       title: mount.title._text,
-      metadata: this.findGetParameter(mount.metadata_url._text),
+      metadata:
+        'metadata_url' in mount
+          ? this.findGetParameter(mount.metadata_url._text)
+          : null,
       listeners: [],
     }));
 
     const promises = mounts.map(mount =>
-      axios
-        .get(
-          `${this.getUrl()}${this.config.xml.listclients}?mount=${mount.name}`
-        )
-        .then(({ data }) => {
-          mount.listeners = this.getXMLClient(data);
-        })
+      axios.get(this.getUrlClients(mount.name)).then(({ data }) => {
+        mount.listeners = this.getXMLClient(data);
+      })
     );
 
     await Promise.all(promises);
