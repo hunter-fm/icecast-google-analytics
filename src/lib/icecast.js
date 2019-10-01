@@ -1,3 +1,4 @@
+import UUID from './uuid';
 import axios from 'axios';
 import EventEmitter from 'events';
 import xml2js from 'xml-js';
@@ -12,7 +13,7 @@ export default class IceCast extends EventEmitter {
     this.getXMLClient = this.getXMLClient.bind(this);
     this.findGetParameter = this.findGetParameter.bind(this);
 
-    this.uuid = uuid;
+    this.uuid = new UUID();
     this.config = config;
     this.sleepTime = sleepTime;
     this.getServerInfo();
@@ -63,13 +64,19 @@ export default class IceCast extends EventEmitter {
     const { source } = icestats;
 
     if (parseInt(source.listeners._text, 10) <= 0) return [];
+
     return Array.from(
       Array.isArray(source.listener) ? source.listener : [source.listener]
     ).map(client => {
+      const { uuid, session } = this.uuid.create(
+        client._attributes.id,
+        client.IP._text
+      );
       return {
         id: client._attributes.id,
         ip: client.IP._text,
-        uuid: this.uuid.create(client._attributes.id, client.IP._text),
+        uuid,
+        session,
         connect: 'Connected' in client ? client.Connected._text : '',
         useragent: 'UserAgent' in client ? client.UserAgent._text : '',
         referer: 'Referer' in client ? client.Referer._text : 'no-referer',
@@ -79,9 +86,8 @@ export default class IceCast extends EventEmitter {
 
   async getXMLInfo(xml) {
     const { icestats } = xml2js.xml2js(xml, { compact: true });
-    const { sources, source } = icestats;
+    const { source } = icestats;
 
-    // if (parseInt(sources._text, 10) <= 0) return [];
     if (source === undefined || source === null) return [];
     const filterSource = Array.from(
       Array.isArray(source) ? source : [source]
@@ -99,6 +105,7 @@ export default class IceCast extends EventEmitter {
       listeners: [],
     }));
 
+    this.uuid.update();
     const promises = mounts.map(mount =>
       axios.get(this.getUrlClients(mount.name)).then(({ data }) => {
         mount.listeners = this.getXMLClient(data);
@@ -106,6 +113,8 @@ export default class IceCast extends EventEmitter {
     );
 
     await Promise.all(promises);
+    this.uuid.clear();
+
     this.emit('update', mounts);
     return true;
   }
